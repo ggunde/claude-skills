@@ -20,6 +20,26 @@ Check these before running anything:
    - `GH_PAT` — PAT with access to the target org
    - If either is missing, ask the user to export it (don't ask them to paste the token value into chat).
 
+### Required token scopes
+
+Both tokens must be **classic** PATs (fine-grained tokens aren't supported by gh-gei). If SAML SSO is enabled on the org, each token needs to be SSO-authorized for it.
+
+- `GH_SOURCE_PAT` (source org):
+  - Org **owner**: `admin:org`, `repo`
+  - Org **migrator role** (if not an owner): `admin:org`, `repo`
+- `GH_PAT` (target org):
+  - Org **owner**: `repo`, `admin:org`, `workflow`
+  - Org **migrator role** (if not an owner): `repo`, `read:org`, `workflow`
+  - Note: only an org owner on the target can actually *receive* migrated repos, even if a migrator token runs the command.
+
+If either org has an IP allow list, it must permit GitHub Enterprise Importer's service traffic or the migration will fail to authenticate.
+
+### Additional requirement for GHES sources
+
+If the source is GHES **3.7 or earlier**, gh-gei stages the migration through a blob storage account you provide — pass `--azure-storage-connection-string` (or set `AZURE_STORAGE_CONNECTION_STRING` in the environment; AWS S3 credentials work too, see gh-gei docs). This script doesn't add its own flag for it, but since it just shells out to `gh gei`, setting `AZURE_STORAGE_CONNECTION_STRING` in the environment before running is picked up automatically.
+
+If the source is GHES **3.8+**, you can instead avoid provisioning your own storage entirely by passing `--use-github-storage` (not currently exposed by `scripts/migration.py` — mention this to the user if they hit blob-storage errors on a modern GHES source, and add the flag to the script's `cmd` list on request).
+
 ## Gather migration parameters
 
 Ask the user (or infer from context) for:
